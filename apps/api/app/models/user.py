@@ -36,3 +36,6 @@ class User(Base):
     alerts: Mapped[list["Alert"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    challenges: Mapped[list["Challenge"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )

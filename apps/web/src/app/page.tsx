@@ -116,12 +116,22 @@ export default function HomePage() {
             OAuth. Your utility credentials are never stored. Data is encrypted
             at rest and in transit and never sold or shared.
           </p>
+          <Link
+            href="/privacy"
+            className="inline-block mt-4 text-primary text-sm font-medium hover:underline"
+          >
+            Read our full Privacy & Security policy →
+          </Link>
         </div>
       </section>
 
-      <footer className="border-t px-6 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} VoltAgent. Built for Washington state
-        residents.
+      <footer className="border-t px-6 py-8 text-center text-sm text-muted-foreground space-y-2">
+        <p>© {new Date().getFullYear()} VoltAgent. Built for Washington state residents.</p>
+        <div className="flex justify-center gap-6">
+          <Link href="/privacy" className="hover:text-foreground transition">Privacy & Security</Link>
+          <Link href="/auth/login" className="hover:text-foreground transition">Sign In</Link>
+          <Link href="/auth/signup" className="hover:text-foreground transition">Get Started</Link>
+        </div>
       </footer>
     </main>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap, LayoutDashboard, Settings, LogOut } from "lucide-react";
+import { Zap, LayoutDashboard, Settings, LogOut, Target } from "lucide-react";
 
 export function DashboardNav() {
   return (
@@ -16,6 +16,13 @@ export function DashboardNav() {
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
+          </Link>
+          <Link
+            href="/challenge"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
+          >
+            <Target className="h-4 w-4" />
+            Sprint
           </Link>
           <Link
             href="/settings"

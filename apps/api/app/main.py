@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.base import init_db
-from app.routers import auth, dashboard, notifications, users, utility
+from app.routers import analytics, auth, challenge, dashboard, notifications, users, utility
 
 logger = structlog.get_logger()
 
@@ -39,6 +39,8 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(utility.router, prefix="/utility", tags=["utility"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+app.include_router(challenge.router, prefix="/challenge", tags=["challenge"])
+app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 
 
 @app.get("/health")
