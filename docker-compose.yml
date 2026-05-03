@@ -1,0 +1,83 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: voltagent
+      POSTGRES_USER: voltagent
+      POSTGRES_PASSWORD: voltagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voltagent:voltagent@db:5432/voltagent
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./apps/api:/app
+
+  worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voltagent:voltagent@db:5432/voltagent
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    command: celery -A app.worker beat --loglevel=info
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voltagent:voltagent@db:5432/voltagent
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      - db
+      - redis
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8000
+    env_file:
+      - ./apps/web/.env.local
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

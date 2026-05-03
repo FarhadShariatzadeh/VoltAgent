@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.env
+*.env.local
+
+# Node
+node_modules/
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+.npm
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.override.yml
+
+# Database
+*.sqlite
+*.db
+
+# Uploads
+apps/api/uploads/
