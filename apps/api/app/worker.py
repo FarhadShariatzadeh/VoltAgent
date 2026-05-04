@@ -3,10 +3,14 @@ Celery application — background tasks and beat schedule.
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from typing import AsyncGenerator
 
 from celery import Celery
 from celery.schedules import crontab
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -33,6 +37,22 @@ celery.conf.beat_schedule = {
 celery.conf.timezone = "UTC"
 
 
+@asynccontextmanager
+async def worker_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Create a fresh engine + session for each Celery task.
+    NullPool prevents asyncpg connections from being shared across
+    event loops (which causes 'Future attached to a different loop').
+    """
+    engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            yield session
+    finally:
+        await engine.dispose()
+
+
 @celery.task(name="app.worker.run_agent_analysis_all_users")
 def run_agent_analysis_all_users() -> None:
     asyncio.run(_run_analysis())
@@ -57,15 +77,14 @@ async def _run_analysis() -> None:
     from sqlalchemy import select
 
     from app.agents.coordinator import CoordinatorAgent
-    from app.db.base import AsyncSessionLocal
     from app.models.user import User
 
-    async with AsyncSessionLocal() as session:
+    async with worker_session() as session:
         result = await session.execute(select(User))
         users = result.scalars().all()
 
     for user in users:
-        async with AsyncSessionLocal() as session:
+        async with worker_session() as session:
             coordinator = CoordinatorAgent(session)
             await coordinator.run_full_analysis(user)
 
@@ -73,14 +92,12 @@ async def _run_analysis() -> None:
 async def _update_challenges() -> None:
     from sqlalchemy import select
 
-    from app.db.base import AsyncSessionLocal
     from app.models.challenge import Challenge, ChallengeDayResult, ChallengeStatus
     from app.repositories.usage import UsageRepository
 
     now = datetime.now(timezone.utc)
-    today = now.date()
 
-    async with AsyncSessionLocal() as session:
+    async with worker_session() as session:
         result = await session.execute(
             select(Challenge).where(Challenge.status == ChallengeStatus.ACTIVE)
         )
@@ -160,7 +177,6 @@ async def _update_challenges() -> None:
 async def _compute_snapshot() -> None:
     from sqlalchemy import func, select
 
-    from app.db.base import AsyncSessionLocal
     from app.models.alert import Alert
     from app.models.analytics import DailyPlatformSnapshot
     from app.models.challenge import Challenge, ChallengeStatus
@@ -168,10 +184,9 @@ async def _compute_snapshot() -> None:
     from app.models.utility_data import UsageRecord
 
     now = datetime.now(timezone.utc)
-    today = now.date()
     thirty_days_ago = now - timedelta(days=30)
 
-    async with AsyncSessionLocal() as session:
+    async with worker_session() as session:
         # Check if snapshot already exists for today
         existing = await session.scalar(
             select(DailyPlatformSnapshot).where(
@@ -222,7 +237,6 @@ async def _compute_snapshot() -> None:
 async def _send_weekly_summaries() -> None:
     from sqlalchemy import func, select
 
-    from app.db.base import AsyncSessionLocal
     from app.models.challenge import Challenge, ChallengeStatus
     from app.models.user import User
     from app.models.utility_data import UsageRecord
@@ -232,14 +246,14 @@ async def _send_weekly_summaries() -> None:
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     last_month_start = (month_start - timedelta(days=1)).replace(day=1)
 
-    async with AsyncSessionLocal() as session:
+    async with worker_session() as session:
         result = await session.execute(
             select(User).where(User.notify_email == True)  # noqa: E712
         )
         users = result.scalars().all()
 
     for user in users:
-        async with AsyncSessionLocal() as session:
+        async with worker_session() as session:
             # This month's kWh
             month_kwh = (
                 await session.scalar(
