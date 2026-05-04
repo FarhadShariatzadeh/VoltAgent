@@ -1,52 +1,52 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import type { DashboardData } from "@/lib/api";
 
-interface Props {
-  data?: DashboardData;
-  loading?: boolean;
-}
+interface Props { data?: DashboardData; loading?: boolean }
 
 export function TierTrackerCard({ data, loading }: Props) {
-  if (loading || !data) {
-    return (
-      <div className="bg-background border rounded-lg p-5 flex items-center justify-center h-[120px]">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  if (loading || !data) return <SkeletonCard />;
 
-  const usedKwh = data.kwh_used_this_month;
-  const tierLimit = data.tier1_limit_kwh;
-  const pct = Math.min((usedKwh / tierLimit) * 100, 100);
-  const remaining = Math.max(0, tierLimit - usedKwh);
-  const inTier2 = usedKwh > tierLimit;
+  const used = data.kwh_used_this_month;
+  const limit = data.tier1_limit_kwh;
+  const pct = Math.min((used / limit) * 100, 100);
+  const inTier2 = used > limit;
+  const remaining = Math.max(0, limit - used);
+
+  const barColor = inTier2 ? "bg-red-500" : pct > 80 ? "bg-amber-400" : "bg-blue-500";
 
   return (
-    <div className="bg-background border rounded-lg p-5">
-      <p className="text-sm text-muted-foreground mb-1">Tier Usage</p>
-      <p className="text-3xl font-bold">
-        {usedKwh.toFixed(0)}{" "}
-        <span className="text-base font-normal text-muted-foreground">
-          / {tierLimit} kWh
-        </span>
-      </p>
-
-      <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${
-            inTier2 ? "bg-red-500" : pct > 85 ? "bg-yellow-500" : "bg-primary"
-          }`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Tier Usage</p>
+        <span className="text-xs text-slate-400">{limit} kWh limit</span>
       </div>
+      <div>
+        <p className="text-4xl font-bold text-slate-900">
+          {used.toFixed(0)}
+          <span className="text-base font-normal text-slate-400"> kWh</span>
+        </p>
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-xs text-slate-500">
+          {inTier2
+            ? `${(used - limit).toFixed(0)} kWh in Tier 2 — 42% higher rate`
+            : `${remaining.toFixed(0)} kWh left before Tier 2`}
+        </p>
+      </div>
+    </div>
+  );
+}
 
-      <p className="text-xs text-muted-foreground mt-2">
-        {inTier2
-          ? `${(usedKwh - tierLimit).toFixed(0)} kWh in Tier 2 — higher rate applies.`
-          : `${remaining.toFixed(0)} kWh left in Tier 1 — next tier costs ~42% more.`}
-      </p>
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 animate-pulse">
+      <div className="h-3 w-24 bg-slate-100 rounded mb-4" />
+      <div className="h-10 w-28 bg-slate-100 rounded mb-4" />
+      <div className="h-2 w-full bg-slate-100 rounded" />
     </div>
   );
 }
