@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
 
-    # Anthropic
-    ANTHROPIC_API_KEY: str = ""
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     # Notifications
     RESEND_API_KEY: str = ""

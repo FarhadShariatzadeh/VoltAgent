@@ -1,23 +1,20 @@
 from abc import ABC, abstractmethod
 
-import anthropic
 import structlog
+from openai import AsyncOpenAI
 
 from app.core.config import settings
 
 logger = structlog.get_logger()
 
-_client: anthropic.AsyncAnthropic | None = None
+_client: AsyncOpenAI | None = None
 
 
-def get_client() -> anthropic.AsyncAnthropic:
+def get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     return _client
-
-
-MODEL = "claude-sonnet-4-6"
 
 
 class BaseAgent(ABC):
@@ -30,15 +27,15 @@ class BaseAgent(ABC):
         self.log = logger.bind(agent=self.name)
 
     async def _run(self, system: str, user: str, max_tokens: int = 1024) -> str:
-        response = await self.client.messages.create(
-            model=MODEL,
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
         )
-        text = response.content[0]
-        assert text.type == "text"
-        return text.text
+        return response.choices[0].message.content or ""
 
     @abstractmethod
     async def run(self, context: dict) -> dict:
