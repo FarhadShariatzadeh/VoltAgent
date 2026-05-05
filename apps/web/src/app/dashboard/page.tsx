@@ -30,8 +30,12 @@ export default function DashboardPage() {
       setUsage(u);
       setAlerts(a);
       setLastUpdated(new Date());
-    } catch {
-      // unauthenticated — cards show skeleton
+    } catch (err) {
+      console.error("Dashboard load failed:", err);
+      // Show empty-state cards rather than indefinite skeleton
+      setSummary(undefined);
+      setUsage([]);
+      setAlerts([]);
     } finally {
       setLoading(false);
     }
