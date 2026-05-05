@@ -100,9 +100,34 @@ export function UtilityConnectionCard() {
                 Disconnect
               </button>
             </div>
-            {seedDone && (
+
+            {seedDone ? (
               <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3 text-sm text-emerald-700">
                 ✓ 30 days of demo data loaded — go check your dashboard!
+              </div>
+            ) : (
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide">Demo data</p>
+                {seedError && (
+                  <div className="mb-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg px-3 py-2">
+                    {seedError}
+                  </div>
+                )}
+                <button
+                  onClick={handleSeedDemo}
+                  disabled={seeding}
+                  className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {seeding ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="h-4 w-4" />
+                  )}
+                  {seeding ? "Loading 30 days of data…" : "Load Demo Data (30 days)"}
+                </button>
+                <p className="text-xs text-slate-400 mt-2">
+                  Populates your dashboard with realistic 15-min interval usage data.
+                </p>
               </div>
             )}
           </div>
