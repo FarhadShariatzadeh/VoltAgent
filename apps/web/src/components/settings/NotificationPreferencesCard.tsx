@@ -1,87 +1,107 @@
 "use client";
 
 import { useState } from "react";
+import { Bell, Mail, MessageSquare } from "lucide-react";
 
 type Channel = "email" | "sms";
 type AlertType = "tou" | "tier" | "forecast" | "vampire";
 
-const ALERT_LABELS: Record<AlertType, string> = {
-  tou: "Peak hour warnings",
-  tier: "Tier threshold alerts",
-  forecast: "Bill forecast updates",
-  vampire: "Vampire power detections",
-};
+const CHANNELS: { key: Channel; label: string; sub: string; icon: React.ElementType }[] = [
+  { key: "email", label: "Email", sub: "Receive alerts in your inbox", icon: Mail },
+  { key: "sms", label: "SMS / Text", sub: "Requires phone number on account", icon: MessageSquare },
+];
+
+const ALERT_TYPES: { key: AlertType; label: string; sub: string }[] = [
+  { key: "tou", label: "Peak hour warnings", sub: "Before expensive TOU windows open" },
+  { key: "tier", label: "Tier threshold alerts", sub: "When you're close to crossing tiers" },
+  { key: "forecast", label: "Bill forecast updates", sub: "Weekly projection of your bill" },
+  { key: "vampire", label: "Vampire power detections", sub: "Unusual overnight standby loads" },
+];
+
+function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${on ? "bg-blue-600" : "bg-slate-200"}`}
+    >
+      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 mt-0.5 ${on ? "translate-x-5" : "translate-x-0.5"}`} />
+    </button>
+  );
+}
 
 export function NotificationPreferencesCard() {
-  const [channels, setChannels] = useState<Record<Channel, boolean>>({
-    email: true,
-    sms: false,
-  });
-  const [alerts, setAlerts] = useState<Record<AlertType, boolean>>({
-    tou: true,
-    tier: true,
-    forecast: true,
-    vampire: true,
-  });
+  const [channels, setChannels] = useState<Record<Channel, boolean>>({ email: true, sms: false });
+  const [alerts, setAlerts] = useState<Record<AlertType, boolean>>({ tou: true, tier: true, forecast: true, vampire: true });
+  const [saved, setSaved] = useState(false);
 
   const toggle = <T extends string>(
     setter: React.Dispatch<React.SetStateAction<Record<T, boolean>>>,
     key: T
-  ) => setter((prev) => ({ ...prev, [key]: !prev[key] }));
+  ) => setter((p) => ({ ...p, [key]: !p[key] }));
+
+  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   return (
-    <div className="bg-background border rounded-lg p-6">
-      <h2 className="font-semibold text-lg mb-5">Notification Preferences</h2>
-
-      <div className="mb-6">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-          Channels
-        </h3>
-        <div className="space-y-3">
-          {(["email", "sms"] as Channel[]).map((ch) => (
-            <label key={ch} className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm capitalize">{ch === "sms" ? "SMS / Text message" : "Email"}</span>
-              <button
-                role="switch"
-                aria-checked={channels[ch]}
-                onClick={() => toggle(setChannels, ch)}
-                className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${channels[ch] ? "bg-primary" : "bg-muted"}`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${channels[ch] ? "translate-x-4" : "translate-x-0.5"}`}
-                />
-              </button>
-            </label>
-          ))}
+    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-6 pt-6 pb-5 border-b border-slate-50">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+            <Bell className="h-4 w-4 text-amber-600" />
+          </div>
+          <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
         </div>
+        <p className="text-sm text-slate-500 ml-11">Choose how and when your AI agent contacts you.</p>
       </div>
 
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-          Alert types
-        </h3>
-        <div className="space-y-3">
-          {(Object.keys(ALERT_LABELS) as AlertType[]).map((key) => (
-            <label key={key} className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm">{ALERT_LABELS[key]}</span>
-              <button
-                role="switch"
-                aria-checked={alerts[key]}
-                onClick={() => toggle(setAlerts, key)}
-                className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${alerts[key] ? "bg-primary" : "bg-muted"}`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${alerts[key] ? "translate-x-4" : "translate-x-0.5"}`}
-                />
-              </button>
-            </label>
-          ))}
+      <div className="p-6 space-y-6">
+        {/* Channels */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Delivery channels</p>
+          <div className="space-y-1">
+            {CHANNELS.map(({ key, label, sub, icon: Icon }) => (
+              <div key={key} className="flex items-center justify-between py-2.5 px-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 bg-slate-50 rounded-lg flex items-center justify-center">
+                    <Icon className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{label}</p>
+                    <p className="text-xs text-slate-400">{sub}</p>
+                  </div>
+                </div>
+                <Toggle on={channels[key]} onToggle={() => toggle(setChannels, key)} />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <button className="mt-6 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity">
-        Save preferences
-      </button>
+        <div className="border-t border-slate-50" />
+
+        {/* Alert types */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Alert types</p>
+          <div className="space-y-1">
+            {ALERT_TYPES.map(({ key, label, sub }) => (
+              <div key={key} className="flex items-center justify-between py-2.5 px-1">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">{label}</p>
+                  <p className="text-xs text-slate-400">{sub}</p>
+                </div>
+                <Toggle on={alerts[key]} onToggle={() => toggle(setAlerts, key)} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={save}
+          className={`w-full py-2.5 rounded-lg text-sm font-semibold transition ${saved ? "bg-emerald-500 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+        >
+          {saved ? "✓ Saved" : "Save preferences"}
+        </button>
+      </div>
     </div>
   );
 }
