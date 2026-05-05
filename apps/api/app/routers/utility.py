@@ -73,7 +73,8 @@ async def seed_demo_data(user: CurrentUser, session: DBSession) -> dict:
     """
     from sqlalchemy import delete
 
-    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    # Use naive UTC datetimes — DB column is TIMESTAMP WITHOUT TIME ZONE
+    now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
     start = now - timedelta(days=30)
 
     # Wipe any existing demo records for this period
@@ -111,7 +112,7 @@ async def seed_demo_data(user: CurrentUser, session: DBSession) -> dict:
         records.append(UsageRecord(
             user_id=user.id,
             interval_start=t,
-            interval_end=t + timedelta(minutes=15),
+            interval_end=t + timedelta(minutes=15),  # noqa: naive UTC, matches DB column type
             kwh=kwh,
             source=DataSource.GREEN_BUTTON,
         ))
