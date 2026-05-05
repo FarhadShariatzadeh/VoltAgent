@@ -17,6 +17,9 @@ An agentic AI web app that acts as a personal energy manager for residential bui
 - **Savings Calculator** — instant savings estimate on the landing page before sign-up
 - **Privacy & Security page** — full transparency on data collection, OAuth scope, and deletion rights
 
+<img width="1856" height="1072" alt="image" src="https://github.com/user-attachments/assets/e53bff41-2abc-46b8-a20d-efd1f7922472" />
+
+
 ## Architecture
 
 ```
