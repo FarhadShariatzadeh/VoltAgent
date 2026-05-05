@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -36,7 +36,7 @@ async def get_usage_history(
     from datetime import timedelta
 
     repo = UsageRepository(session)
-    end = datetime.now(timezone.utc)
+    end = datetime.utcnow()  # naive UTC — matches DB TIMESTAMP WITHOUT TIME ZONE
     start = end - timedelta(days=days)
     records = await repo.get_for_period(user.id, start, end)
     return [

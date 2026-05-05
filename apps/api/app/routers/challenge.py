@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -51,7 +51,7 @@ async def enroll(user: CurrentUser, session: DBSession) -> ChallengeResponse:
 
     # Baseline: average daily kWh over the past 30 days
     usage_repo = UsageRepository(session)
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     thirty_days_ago = now - timedelta(days=30)
     records = await usage_repo.get_for_period(user.id, thirty_days_ago, now)
     total_kwh = sum(r.kwh for r in records)
@@ -82,7 +82,7 @@ async def get_current(user: CurrentUser, session: DBSession) -> ChallengeRespons
     challenge = result.scalar_one_or_none()
     if not challenge:
         raise HTTPException(404, "No active challenge")
-    return _to_response(challenge, datetime.now(timezone.utc))
+    return _to_response(challenge, datetime.utcnow())
 
 
 @router.get("/current/days", response_model=list[DayResultResponse])
@@ -118,7 +118,7 @@ async def get_day_results(user: CurrentUser, session: DBSession) -> list[DayResu
 
 @router.get("/history", response_model=list[ChallengeResponse])
 async def get_history(user: CurrentUser, session: DBSession) -> list[ChallengeResponse]:
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     result = await session.execute(
         select(Challenge)
         .where(Challenge.user_id == user.id)

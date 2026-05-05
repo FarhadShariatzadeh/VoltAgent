@@ -95,7 +95,7 @@ async def _update_challenges() -> None:
     from app.models.challenge import Challenge, ChallengeDayResult, ChallengeStatus
     from app.repositories.usage import UsageRepository
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()  # naive UTC — matches DB TIMESTAMP WITHOUT TIME ZONE
 
     async with worker_session() as session:
         result = await session.execute(
@@ -104,18 +104,14 @@ async def _update_challenges() -> None:
         challenges = result.scalars().all()
 
         for challenge in challenges:
+            # DB stores naive UTC datetimes — compare directly
             started = challenge.started_at
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=timezone.utc)
-
             day_number = (now - started).days  # 0-indexed current day
             if day_number < 0:
                 continue
 
             # Mark expired challenges
             ends = challenge.ends_at
-            if ends.tzinfo is None:
-                ends = ends.replace(tzinfo=timezone.utc)
             if now >= ends:
                 challenge.status = (
                     ChallengeStatus.COMPLETED
@@ -183,7 +179,7 @@ async def _compute_snapshot() -> None:
     from app.models.user import User
     from app.models.utility_data import UsageRecord
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()  # naive UTC — matches DB TIMESTAMP WITHOUT TIME ZONE
     thirty_days_ago = now - timedelta(days=30)
 
     async with worker_session() as session:
@@ -242,7 +238,7 @@ async def _send_weekly_summaries() -> None:
     from app.models.utility_data import UsageRecord
     from app.services.notifier import NotifierService
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()  # naive UTC — matches DB TIMESTAMP WITHOUT TIME ZONE
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     last_month_start = (month_start - timedelta(days=1)).replace(day=1)
 

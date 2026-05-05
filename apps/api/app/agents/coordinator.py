@@ -4,7 +4,7 @@ Called by the dashboard endpoint and by the Celery background beat.
 """
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: timezone used in run_full_analysis
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,7 +46,8 @@ class CoordinatorAgent:
         even when the user has no usage data yet.
         AI agents only run in the background Celery beat (run_full_analysis).
         """
-        now = datetime.now(timezone.utc)
+        # Use naive UTC — DB column is TIMESTAMP WITHOUT TIME ZONE
+        now = datetime.utcnow()
         usage_repo = UsageRepository(self.session)
 
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -98,7 +99,7 @@ class CoordinatorAgent:
         Called by the Celery background beat (every 15 min per user).
         """
         self.log.info("run_full_analysis", user_id=user.id)
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()  # naive UTC — matches DB TIMESTAMP WITHOUT TIME ZONE
         usage_repo = UsageRepository(self.session)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         records = await usage_repo.get_for_period(user.id, month_start, now)
