@@ -1,12 +1,12 @@
 services:
-  # FastAPI backend
+  # Single service: FastAPI + Celery worker + Celery beat (Render free tier)
   - type: web
     name: voltagent-api
     runtime: python
     rootDir: apps/api
     plan: free
     buildCommand: pip install -e .
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: bash start.sh
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -17,50 +17,6 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: FRONTEND_URL
-        sync: false
-      - key: APP_ENV
-        value: production
-      - key: PYTHON_VERSION
-        value: 3.12.0
-
-  # Celery worker
-  - type: worker
-    name: voltagent-worker
-    runtime: python
-    rootDir: apps/api
-    plan: free
-    buildCommand: pip install -e .
-    startCommand: celery -A app.worker worker --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: SECRET_KEY
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: APP_ENV
-        value: production
-      - key: PYTHON_VERSION
-        value: 3.12.0
-
-  # Celery beat scheduler
-  - type: worker
-    name: voltagent-beat
-    runtime: python
-    rootDir: apps/api
-    plan: free
-    buildCommand: pip install -e .
-    startCommand: celery -A app.worker beat --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: SECRET_KEY
-        sync: false
-      - key: OPENAI_API_KEY
         sync: false
       - key: APP_ENV
         value: production
