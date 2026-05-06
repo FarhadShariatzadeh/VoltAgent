@@ -4,6 +4,7 @@ services:
     name: voltagent-api
     runtime: python
     rootDir: apps/api
+    plan: free
     buildCommand: pip install -e .
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -27,6 +28,7 @@ services:
     name: voltagent-worker
     runtime: python
     rootDir: apps/api
+    plan: free
     buildCommand: pip install -e .
     startCommand: celery -A app.worker worker --loglevel=info
     envVars:
@@ -48,6 +50,7 @@ services:
     name: voltagent-beat
     runtime: python
     rootDir: apps/api
+    plan: free
     buildCommand: pip install -e .
     startCommand: celery -A app.worker beat --loglevel=info
     envVars:
