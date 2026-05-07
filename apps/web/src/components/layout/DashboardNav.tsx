@@ -21,10 +21,10 @@ export function DashboardNav() {
   return (
     <nav className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm px-6 py-0 flex items-center justify-between h-14 shadow-sm">
       <div className="flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-2 font-bold text-blue-600 shrink-0">
+        <a href="/" className="flex items-center gap-2 font-bold text-blue-600 shrink-0 cursor-pointer">
           <Zap className="h-5 w-5" />
           VoltAgent
-        </Link>
+        </a>
 
         <div className="flex items-center gap-1">
           {links.map(({ href, label, icon: Icon }) => {
