@@ -2,6 +2,8 @@
 
 An agentic AI web app that acts as a personal energy manager for residential buildings in Washington state. It proactively analyzes utility usage, forecasts your bill, runs a 30-day savings sprint, and sends smart alerts via email or SMS — all automatically.
 
+**Live demo:** https://volt-agent.vercel.app
+
 ## Features
 
 - **Bill Forecasting** — AI predicts your end-of-month bill from live 15-minute interval data
@@ -12,13 +14,13 @@ An agentic AI web app that acts as a personal energy manager for residential bui
 - **Investor Analytics** — platform-wide MAU, collective kWh saved, load-shifting metrics
 - **Weekly Summary Email** — rich HTML digest with projected bill, savings, and sprint progress
 - **Email & SMS Notifications** — per-alert-type preferences, delivered via Resend and Twilio
-- **Green Button OAuth** — connects directly to WA utility accounts for live data
+- **Green Button OAuth** — connects directly to WA utility accounts for live data (requires utility developer registration)
+- **Demo Data** — instant 30-day synthetic dataset so you can explore all features without a utility connection
 - **PDF Bill Upload** — manual fallback for users without live connection
 - **Savings Calculator** — instant savings estimate on the landing page before sign-up
 - **Privacy & Security page** — full transparency on data collection, OAuth scope, and deletion rights
 
 <img width="1856" height="1072" alt="image" src="https://github.com/user-attachments/assets/e53bff41-2abc-46b8-a20d-efd1f7922472" />
-
 
 ## Architecture
 
@@ -75,7 +77,64 @@ All agents use the OpenAI Chat Completions API and return structured JSON.
 | Auth | JWT (python-jose) + Green Button OAuth |
 | External APIs | Open-Meteo (weather), Electricity Maps (carbon intensity) |
 
-## Getting Started
+## Deployment
+
+The app is deployed across three free-tier services:
+
+| Service | Platform | URL |
+|---|---|---|
+| Frontend | Vercel | https://volt-agent.vercel.app |
+| API + Celery | Render | https://voltagent-api.onrender.com |
+| PostgreSQL | Supabase | Managed |
+| Redis | Upstash | Managed |
+
+> **Note:** The Render free tier spins down after 15 min of inactivity — the first request after idle may take ~30 seconds to wake up.
+
+### Deploy your own
+
+#### 1. Supabase (PostgreSQL)
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to **Connect** → **Direct** → **Session pooler** → copy the URI
+3. Replace `postgresql://` with `postgresql+asyncpg://`
+
+#### 2. Upstash (Redis)
+1. Create a database at [upstash.com](https://upstash.com)
+2. Copy the `REDIS_URL` from the dashboard
+
+#### 3. Render (API + Celery worker + beat)
+1. Go to [render.com](https://render.com) → **New** → **Blueprint**
+2. Connect the VoltAgent GitHub repo — Render detects `render.yaml` automatically
+3. Fill in environment variables (see table below)
+4. After deploy, run migrations: point `DATABASE_URL` at Supabase and run `alembic upgrade head`
+
+#### 4. Vercel (Frontend)
+1. Go to [vercel.com](https://vercel.com) → **Add New Project** → import VoltAgent
+2. Set **Root Directory** → `apps/web`
+3. Add `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_APP_URL` environment variables
+4. Deploy
+
+### Production Environment Variables
+
+**Render (API):**
+
+| Variable | Where to get it |
+|---|---|
+| `DATABASE_URL` | Supabase → Connect → Session pooler URI (with `+asyncpg`) |
+| `REDIS_URL` | Upstash dashboard |
+| `SECRET_KEY` | `openssl rand -hex 32` |
+| `OPENAI_API_KEY` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `FRONTEND_URL` | Your Vercel URL (e.g. `https://volt-agent.vercel.app`) |
+| `RESEND_API_KEY` | [resend.com](https://resend.com) (optional — for email) |
+| `TWILIO_*` | [twilio.com/console](https://www.twilio.com/console) (optional — for SMS) |
+
+**Vercel (Frontend):**
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Your Render API URL |
+| `NEXT_PUBLIC_APP_URL` | Your Vercel URL |
+
+## Local Development
 
 ### Prerequisites
 
@@ -87,8 +146,8 @@ All agents use the OpenAI Chat Completions API and return structured JSON.
 ```bash
 # 1. Copy and fill in your API keys
 cp apps/api/.env.example apps/api/.env
-# Edit apps/api/.env — minimum required keys:
-#   SECRET_KEY=<any 32-char random string>
+# Edit apps/api/.env — minimum required:
+#   SECRET_KEY=<run: openssl rand -hex 32>
 #   OPENAI_API_KEY=sk-...
 
 # 2. Build and start all services
@@ -104,7 +163,7 @@ docker compose exec api alembic upgrade head
 | API | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
 
-### Option B — Local Development
+### Option B — Local without Docker
 
 ```bash
 # Start only the infrastructure
@@ -123,14 +182,32 @@ npm install
 npm run dev                     # http://localhost:3001
 ```
 
-### Required Environment Variables
+### Useful commands
 
-| Variable | Where to get it |
-|---|---|
-| `SECRET_KEY` | Run `openssl rand -hex 32` |
-| `OPENAI_API_KEY` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| `RESEND_API_KEY` | [resend.com](https://resend.com) (optional — for email delivery) |
-| `TWILIO_*` | [twilio.com/console](https://www.twilio.com/console) (optional — for SMS) |
+```bash
+# Restart API after Python code changes
+docker compose restart api
+
+# Rebuild frontend after UI changes
+docker compose build web && docker compose up -d
+
+# Rebuild frontend after package.json changes
+docker compose build --no-cache web && docker compose up -d
+
+# View logs
+docker compose logs api --tail=30
+docker compose logs worker --tail=30
+
+# Full reset (wipes local DB)
+docker compose down -v && docker compose up -d
+```
+
+### Testing the app
+
+1. Sign up at http://localhost:3001/auth/signup
+2. Go to **Settings** → click **Load 30 Days of Demo Data** to populate the dashboard
+3. Go to **Dashboard** to see forecasts, TOU status, tier usage, and vampire power
+4. Go to **Sprint** to enroll in a 30-day energy challenge
 
 ## Pages
 
@@ -141,7 +218,7 @@ npm run dev                     # http://localhost:3001
 | `/auth/login` | Login |
 | `/dashboard` | Live KPI cards, daily usage chart, agent alerts feed |
 | `/challenge` | 30-day sprint enrollment, progress ring, day-by-day results |
-| `/settings` | Utility connection, PDF upload, notification preferences |
+| `/settings` | Utility connection, demo data loader, PDF upload, notification preferences |
 | `/privacy` | Full privacy and security policy |
 
 ## Supported Utilities
@@ -150,3 +227,5 @@ npm run dev                     # http://localhost:3001
 - Seattle City Light
 - Tacoma Power
 - Snohomish PUD
+
+> Green Button OAuth requires registering your app with each utility's developer program. Use **Load Demo Data** in Settings to explore all features without a utility connection.
