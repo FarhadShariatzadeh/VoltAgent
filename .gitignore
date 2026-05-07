@@ -49,3 +49,6 @@ logs/
 
 # Uploads
 apps/api/uploads/
+
+# Claude worktrees
+.claude/
